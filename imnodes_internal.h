@@ -394,7 +394,7 @@ inline void ObjectPoolUpdate(ImObjectPool<ImNodeData>& nodes)
     {
         if (nodes.InUse[i])
         {
-            nodes.Pool[i].PinIndices.clear();
+            nodes.Pool[i].PinIndices.resize(0);
         }
         else
         {

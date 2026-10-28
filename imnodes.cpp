@@ -393,8 +393,8 @@ void ImDrawListSplitterSwapChannels(
 void DrawListSet(ImDrawList* window_draw_list)
 {
     GImNodes->CanvasDrawList = window_draw_list;
-    GImNodes->NodeIdxToSubmissionIdx.Clear();
-    GImNodes->NodeIdxSubmissionOrder.clear();
+    GImNodes->NodeIdxToSubmissionIdx.Data.resize(0);
+    GImNodes->NodeIdxSubmissionOrder.resize(0);
 }
 
 // The draw list channels are structured as follows. First we have our base channel, the canvas grid
@@ -2057,6 +2057,17 @@ ImNodesEditorContext* EditorContextCreate()
 
 void EditorContextFree(ImNodesEditorContext* ctx)
 {
+    // Nodes keep their pin index buffers from frame to frame, and the node pool's ImVector frees
+    // its storage without destructing its elements, so the nodes still alive are destructed here
+    ImObjectPool<ImNodeData>& nodes = ctx->Nodes;
+    for (int i = 0; i < nodes.Pool.size(); ++i)
+    {
+        if (nodes.IdMap.GetInt(static_cast<ImGuiID>(nodes.Pool[i].Id), -1) == i)
+        {
+            (nodes.Pool.Data + i)->~ImNodeData();
+        }
+    }
+
     ctx->~ImNodesEditorContext();
     ImGui::MemFree(ctx);
 }
@@ -2281,7 +2292,7 @@ void BeginNodeEditor()
     GImNodes->DeletedLinkIdx.Reset();
     GImNodes->SnapLinkIdx.Reset();
 
-    GImNodes->NodeIndicesOverlappingWithMouse.clear();
+    GImNodes->NodeIndicesOverlappingWithMouse.resize(0);
 
     GImNodes->ImNodesUIState = ImNodesUIState_None;
 
